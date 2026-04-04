@@ -1,4 +1,4 @@
-# A5:DB Document
+# A5:DB Document for AI agent
 
 データベースのスキーマ定義（DDL）を Markdown ファイルとして出力する CLI ツールです。
 生成したファイルを Claude Code などの AI エージェントに渡すことで、正確な SQL を書いてもらいやすくなります。
@@ -16,11 +16,11 @@ pip install -e .
 データベースドライバは別途インストールしてください。
 
 ```bash
+pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 pip install -e ".[pg]"      # PostgreSQL (psycopg2)
 pip install -e ".[mysql]"   # MySQL (PyMySQL)
 pip install -e ".[mssql]"   # SQL Server (pyodbc)
 pip install -e ".[oracle]"  # Oracle (cx_Oracle)
-pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 ```
 
 ## 使い方

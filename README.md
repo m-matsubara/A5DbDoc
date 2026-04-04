@@ -1,4 +1,4 @@
-# A5:DB Document
+# A5:DB Document for AI agent
 
 A CLI tool that exports database schema definitions (DDL) as Markdown files.
 Pass the generated files to Claude Code or any other AI agent to get accurate SQL queries.
@@ -16,11 +16,11 @@ pip install -e .
 Install the database driver for your target database:
 
 ```bash
+pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 pip install -e ".[pg]"      # PostgreSQL (psycopg2)
 pip install -e ".[mysql]"   # MySQL (PyMySQL)
 pip install -e ".[mssql]"   # SQL Server (pyodbc)
 pip install -e ".[oracle]"  # Oracle (cx_Oracle)
-pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 ```
 
 ## Usage
