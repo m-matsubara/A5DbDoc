@@ -202,6 +202,26 @@ def test_raw_type_query_oracle():
     assert params["s"] == "HR"          # uppercase
     assert params["t"] == "ORDERS"      # uppercase
 
+def test_raw_type_query_db2():
+    insp = SchemaInspector.__new__(SchemaInspector)
+    insp.engine = create_engine("sqlite:///:memory:")
+    insp._dialect = "db2"
+    insp.engine.url = insp.engine.url.set(username="myuser")
+    sql, params = insp._raw_type_query("orders", None)
+    assert sql is not None
+    assert "syscat.columns" in str(sql).lower()
+    assert "typename" in str(sql).lower()
+    assert params["s"] == "MYUSER"    # uppercase
+    assert params["t"] == "ORDERS"   # uppercase
+
+def test_raw_type_query_db2_explicit_schema():
+    insp = SchemaInspector.__new__(SchemaInspector)
+    insp.engine = create_engine("sqlite:///:memory:")
+    insp._dialect = "db2"
+    sql, params = insp._raw_type_query("orders", "myschema")
+    assert params["s"] == "MYSCHEMA"
+    assert params["t"] == "ORDERS"
+
 def test_raw_type_query_unknown_dialect():
     insp = SchemaInspector.__new__(SchemaInspector)
     insp.engine = create_engine("sqlite:///:memory:")

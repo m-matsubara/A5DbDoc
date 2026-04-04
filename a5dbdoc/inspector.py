@@ -33,8 +33,13 @@ class SchemaInspector:
             return ["main"]
         try:
             names = insp.get_schema_names()
-            # Filter out internal schemas common to PostgreSQL
-            skip = {"information_schema", "pg_catalog", "pg_toast"}
+            skip: set[str] = {
+                # PostgreSQL
+                "information_schema", "pg_catalog", "pg_toast",
+                # Db2
+                "SYSCAT", "SYSIBM", "SYSIBMADM", "SYSSTAT", "SYSTOOLS",
+                "NULLID", "SQLJ", "SYSPUBLIC",
+            }
             return [n for n in names if n not in skip]
         except Exception:
             return ["default"]
@@ -225,6 +230,16 @@ class SchemaInspector:
                 ),
                 {"s": owner, "t": table_name.upper()},
             )
+        if self._dialect == "db2":
+            tabschema = (schema or self.engine.url.username or "").upper()
+            return (
+                text(
+                    "SELECT colname, typename "
+                    "FROM syscat.columns "
+                    "WHERE tabschema = :s AND tabname = :t"
+                ),
+                {"s": tabschema, "t": table_name.upper()},
+            )
         return None, None
 
     _DIALECT_DISPLAY_NAMES = {
@@ -234,6 +249,7 @@ class SchemaInspector:
         "sqlite": "SQLite",
         "mssql": "SQL Server",
         "oracle": "Oracle",
+        "db2": "Db2",
     }
 
     def get_db_label(self) -> str:

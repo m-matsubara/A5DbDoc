@@ -18,6 +18,7 @@ pg     = ["psycopg2-binary"]
 mysql  = ["pymysql"]
 mssql  = ["pyodbc"]
 oracle = ["cx_oracle"]
+db2    = ["ibm-db-sa"]
 dev    = ["pytest>=8", "pytest-cov"]
 
 [project.scripts]

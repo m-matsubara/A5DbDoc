@@ -3,7 +3,7 @@
 A CLI tool that exports database schema definitions (DDL) as Markdown files.
 Pass the generated files to Claude Code or any other AI agent to get accurate SQL queries.
 
-Supports all databases backed by SQLAlchemy — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, and more.
+Supports all databases backed by SQLAlchemy — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, Db2, and more.
 
 [日本語](README.ja.md)
 
@@ -20,6 +20,7 @@ pip install -e ".[pg]"      # PostgreSQL (psycopg2)
 pip install -e ".[mysql]"   # MySQL (PyMySQL)
 pip install -e ".[mssql]"   # SQL Server (pyodbc)
 pip install -e ".[oracle]"  # Oracle (cx_Oracle)
+pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 ```
 
 ## Usage
@@ -44,6 +45,9 @@ a5dbdoc export mysql+pymysql://user:pass@localhost/mydb
 
 # SQL Server
 a5dbdoc export "mssql+pyodbc://user:pass@server/mydb?driver=ODBC+Driver+17+for+SQL+Server"
+
+# Db2
+a5dbdoc export "db2+ibm_db://user:pass@host:50000/database"
 
 # Filter by schema (PostgreSQL etc.)
 a5dbdoc export postgresql://user:pass@localhost/mydb --schema public

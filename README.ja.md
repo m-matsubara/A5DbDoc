@@ -3,7 +3,7 @@
 データベースのスキーマ定義（DDL）を Markdown ファイルとして出力する CLI ツールです。
 生成したファイルを Claude Code などの AI エージェントに渡すことで、正確な SQL を書いてもらいやすくなります。
 
-SQLAlchemy が対応するすべてのデータベース（PostgreSQL, MySQL, SQLite, SQL Server, Oracle など）に対応しています。
+SQLAlchemy が対応するすべてのデータベース（PostgreSQL, MySQL, SQLite, SQL Server, Oracle, Db2 など）に対応しています。
 
 [English](README.md)
 
@@ -20,6 +20,7 @@ pip install -e ".[pg]"      # PostgreSQL (psycopg2)
 pip install -e ".[mysql]"   # MySQL (PyMySQL)
 pip install -e ".[mssql]"   # SQL Server (pyodbc)
 pip install -e ".[oracle]"  # Oracle (cx_Oracle)
+pip install -e ".[db2]"     # Db2 (ibm-db-sa)
 ```
 
 ## 使い方
@@ -44,6 +45,9 @@ a5dbdoc export mysql+pymysql://user:pass@localhost/mydb
 
 # SQL Server
 a5dbdoc export "mssql+pyodbc://user:pass@server/mydb?driver=ODBC+Driver+17+for+SQL+Server"
+
+# Db2
+a5dbdoc export "db2+ibm_db://user:pass@host:50000/database"
 
 # スキーマを指定（PostgreSQL など）
 a5dbdoc export postgresql://user:pass@localhost/mydb --schema public
