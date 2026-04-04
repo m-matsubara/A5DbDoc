@@ -1,8 +1,10 @@
 """Database schema introspection via SQLAlchemy reflection."""
 
 import fnmatch
+import warnings
 
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import SAWarning
 from sqlalchemy.exc import NoSuchTableError
 
 from .models import (
@@ -98,7 +100,9 @@ class SchemaInspector:
         # --- columns ---
         columns: list[ColumnInfo] = []
         try:
-            raw_cols = insp.get_columns(table_name, schema=schema)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", SAWarning)
+                raw_cols = insp.get_columns(table_name, schema=schema)
         except NoSuchTableError:
             raw_cols = []
 
