@@ -1,7 +1,7 @@
-# a5dbdoc
+# A5:DB Document
 
 A CLI tool that exports database schema definitions (DDL) as Markdown files.
-Pass the generated files to Claude Code or any other LLM to get accurate SQL queries.
+Pass the generated files to Claude Code or any other AI agent to get accurate SQL queries.
 
 Supports all databases backed by SQLAlchemy — PostgreSQL, MySQL, SQLite, SQL Server, Oracle, and more.
 

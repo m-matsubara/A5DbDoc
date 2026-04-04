@@ -1,7 +1,7 @@
-# a5dbdoc
+# A5:DB Document
 
 データベースのスキーマ定義（DDL）を Markdown ファイルとして出力する CLI ツールです。
-生成したファイルを Claude Code などの LLM に渡すことで、正確な SQL を書いてもらいやすくなります。
+生成したファイルを Claude Code などの AI エージェントに渡すことで、正確な SQL を書いてもらいやすくなります。
 
 SQLAlchemy が対応するすべてのデータベース（PostgreSQL, MySQL, SQLite, SQL Server, Oracle など）に対応しています。
 
