@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "a5dbdoc"
+version = "0.1.0"
+description = "Generate Markdown schema documentation from any SQLAlchemy-supported database"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+    "sqlalchemy>=2.0",
+    "rich>=13",
+]
+
+[project.optional-dependencies]
+pg     = ["psycopg2-binary"]
+mysql  = ["pymysql"]
+mssql  = ["pyodbc"]
+oracle = ["cx_oracle"]
+dev    = ["pytest>=8", "pytest-cov"]
+
+[project.scripts]
+a5dbdoc = "a5dbdoc.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["a5dbdoc"]
