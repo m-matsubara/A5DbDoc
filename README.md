@@ -30,6 +30,8 @@ pip install -e ".[oracle]"  # Oracle (cx_Oracle)
 a5dbdoc export <connection-url>
 ```
 
+Running `export` writes `DB_LAYOUT.md` to the current directory. That's the only output file.
+
 ```bash
 # SQLite
 a5dbdoc export sqlite:///./myapp.db
@@ -43,28 +45,19 @@ a5dbdoc export mysql+pymysql://user:pass@localhost/mydb
 # SQL Server
 a5dbdoc export "mssql+pyodbc://user:pass@server/mydb?driver=ODBC+Driver+17+for+SQL+Server"
 
-# Custom output directory
-a5dbdoc export sqlite:///./myapp.db --output ./llm-context/
-
 # Filter by schema (PostgreSQL etc.)
 a5dbdoc export postgresql://user:pass@localhost/mydb --schema public
 
 # Filter tables by glob pattern
 a5dbdoc export postgresql://user:pass@localhost/mydb --table "order*" --table "customer*"
-
-# Write one file per table
-a5dbdoc export postgresql://user:pass@localhost/mydb --split
 ```
 
 **Options:**
 
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| `--output` | `-o` | `./docs/schema` | Output directory |
-| `--schema` | `-s` | (all schemas) | Schema name(s) to include. Repeatable. |
-| `--table` | `-t` | (all tables) | Table name glob pattern(s). Repeatable. |
-| `--split` | | false | Write one file per table instead of one per schema |
-| `--no-index` | | false | Skip the index file (only relevant with `--split`) |
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--schema` | `-s` | Schema name(s) to include. Repeatable. Default: all schemas. |
+| `--table` | `-t` | Table name glob pattern(s). Repeatable. Default: all tables. |
 
 ### List available schemas
 
@@ -80,42 +73,13 @@ a5dbdoc list-tables postgresql://user:pass@localhost/mydb --schema public
 
 ## Output
 
-Running `export` always produces two things:
-
-1. **`./DB_LAYOUT.md`** — project-root summary with all DDL in one SQL code block
-2. **`./docs/schema/`** — per-schema (or per-table with `--split`) detail files
-
-### Per-schema (default)
-
-All tables in a schema are written to a single file.
-
-```
-docs/schema/
-└── public.md
-```
-
-### Per-table (`--split`)
-
-Each table gets its own file, plus an index.
-
-```
-docs/schema/
-├── public__index.md
-├── public__customers.md
-├── public__orders.md
-└── public__order_items.md
-```
-
-### Example output
+`DB_LAYOUT.md` is written to the current directory and contains the full DDL for all tables in a single SQL code block:
 
 ````markdown
-# Schema: `public`
+# DB Layout
 
 - **Database:** PostgreSQL 15.3
-- **Tables:** 2
 - **Exported:** 2026-04-04
-
----
 
 ```sql
 CREATE TABLE public.customers (
@@ -143,25 +107,13 @@ CREATE INDEX ix_orders_customer_id ON public.orders (customer_id);
 
 ## Using with Claude Code
 
-Run `a5dbdoc export` in your project root. Claude Code picks up `DB_LAYOUT.md` automatically via `CLAUDE.md`, or you can reference it explicitly:
-
-```bash
-# Generate schema docs
-a5dbdoc export postgresql://user:pass@localhost/mydb \
-    --schema public \
-    --output ./docs/schema/
-
-# Reference in Claude Code
-# @DB_LAYOUT.md  or  @docs/schema/public.md
-```
-
-Adding the following to your project's `CLAUDE.md` ensures Claude Code always has schema context:
+Run `a5dbdoc export` in your project root. Add the following to your project's `CLAUDE.md` so Claude Code always has schema context:
 
 ```markdown
 ## Database schema
 
-Database schema definitions are in `DB_LAYOUT.md` (summary) and `docs/schema/` (details).
-Always read these files before writing SQL.
+`DB_LAYOUT.md` contains the full DDL for all tables.
+Always read this file before writing SQL.
 ```
 
 ## Development

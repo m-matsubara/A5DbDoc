@@ -15,69 +15,8 @@ def _comma_before_comment(item: str) -> str:
 
 
 class DDLRenderer:
-    def render_table(self, table: TableInfo, db_label: str = "") -> str:
-        """Full Markdown file for one table: header + SQL code block."""
-        parts: list[str] = []
-        parts.append(f"# Table: `{table.qualified_name}`\n")
-        if db_label:
-            parts.append(f"- **Database:** {db_label}")
-        if table.schema:
-            parts.append(f"- **Schema:** {table.schema}")
-        if db_label or table.schema:
-            parts.append("")
-        parts.append("```sql")
-        parts.append(self._render_table_ddl(table))
-        parts.append("```\n")
-        return "\n".join(parts)
-
-    def render_schema(self, schema: SchemaInfo, db_label: str = "") -> str:
-        """Full Markdown file for one schema: header + SQL code block with all tables."""
-        parts: list[str] = []
-        parts.append(f"# Schema: `{schema.name}`\n")
-        if db_label:
-            parts.append(f"- **Database:** {db_label}")
-        parts.append(f"- **Tables:** {len(schema.tables)}")
-        parts.append(f"- **Exported:** {date.today()}")
-        parts.append("")
-
-        # Table of Contents
-        parts.append("## Tables\n")
-        for table in schema.tables:
-            comment = f" — {table.comment}" if table.comment else ""
-            parts.append(f"- `{table.name}`{comment}")
-        parts.append("")
-
-        parts.append("---\n")
-        parts.append("```sql")
-        ddl_blocks = [self._render_table_ddl(t) for t in schema.tables]
-        parts.append("\n\n".join(ddl_blocks))
-        parts.append("```\n")
-        return "\n".join(parts)
-
-    def render_index(self, schema: SchemaInfo, db_label: str = "") -> str:
-        """Index Markdown file listing all tables with links (used with --split)."""
-        parts: list[str] = []
-        parts.append(f"# Schema: `{schema.name}`\n")
-        if db_label:
-            parts.append(f"- **Database:** {db_label}")
-        parts.append(f"- **Tables:** {len(schema.tables)}")
-        parts.append(f"- **Exported:** {date.today()}")
-        parts.append("")
-        parts.append("## Tables\n")
-        parts.append("| Table | Columns | Comment |")
-        parts.append("|-------|--------:|---------|")
-        for table in schema.tables:
-            link = f"[{table.name}]({schema.name}__{table.name}.md)"
-            comment = table.comment or ""
-            parts.append(f"| {link} | {len(table.columns)} | {comment} |")
-        parts.append("")
-        return "\n".join(parts)
-
     def render_db_layout(self, schemas: list[SchemaInfo], db_label: str) -> str:
-        """
-        Project-root summary file (DB_LAYOUT.md).
-        Lists all tables across all schemas with links to detail files.
-        """
+        """Generate DB_LAYOUT.md: database header + all DDL in one SQL code block."""
         parts: list[str] = []
         parts.append("# DB Layout\n")
         parts.append(f"- **Database:** {db_label}")
@@ -85,10 +24,11 @@ class DDLRenderer:
         parts.append("")
 
         parts.append("```sql")
-        ddl_blocks: list[str] = []
-        for schema in schemas:
-            for table in schema.tables:
-                ddl_blocks.append(self._render_table_ddl(table))
+        ddl_blocks = [
+            self._render_table_ddl(table)
+            for schema in schemas
+            for table in schema.tables
+        ]
         parts.append("\n\n".join(ddl_blocks))
         parts.append("```\n")
 

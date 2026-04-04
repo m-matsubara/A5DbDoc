@@ -18,20 +18,19 @@ python -m pytest tests/test_renderer.py::test_ddl_create_table -v
 
 # Run the CLI
 a5dbdoc export sqlite:///./myapp.db
-a5dbdoc export sqlite:///./myapp.db --output ./docs/schema --split
+a5dbdoc export postgresql://user:pass@localhost/mydb --schema public --table "order*"
 a5dbdoc list-schemas postgresql://user:pass@localhost/mydb
 a5dbdoc list-tables postgresql://user:pass@localhost/mydb --schema public
 ```
 
 ## Architecture
 
-The pipeline is: **inspector → models → renderer → writer**, with `cli.py` as the thin orchestrator.
+The pipeline is: **inspector → models → renderer**, with `cli.py` as the thin orchestrator.
 
 - **`models.py`** — Pure dataclasses with no SQLAlchemy imports (`ColumnInfo`, `TableInfo`, `SchemaInfo`, etc.). Everything else depends on these; nothing here depends on anything else.
 - **`inspector.py`** — Connects via SQLAlchemy, reflects schema into model objects. `SchemaInspector` uses `sqlalchemy.inspect()` which works across all dialects. When SQLAlchemy can't identify a column type (returns `NullType`, renders as `"NULL"`), `_get_raw_type_names()` falls back to querying the database catalog directly — the query is dialect-specific (`udt_name` for PostgreSQL, `data_type` for MySQL/MSSQL/Oracle, `all_tab_columns` for Oracle).
-- **`renderer.py`** — Stateless. Takes model objects, returns Markdown strings. `DDLRenderer._render_table_ddl()` generates `CREATE TABLE` + `CREATE INDEX` SQL. `render_schema()` wraps DDL in a Markdown file with a header. `render_db_layout()` combines all schemas into a single DDL block for `DB_LAYOUT.md`.
-- **`writer.py`** — Handles file I/O only. Two modes: `write_per_schema()` (one file per schema) and `write_per_table()` (one file per table + index file).
-- **`cli.py`** — Typer commands: `export`, `list-schemas`, `list-tables`. `export` always writes `./DB_LAYOUT.md` in addition to the `--output` directory files.
+- **`renderer.py`** — Stateless. Takes model objects, returns Markdown strings. `DDLRenderer._render_table_ddl()` generates `CREATE TABLE` + `CREATE INDEX` SQL. `render_db_layout()` combines all schemas into a single DDL block and writes `DB_LAYOUT.md`.
+- **`cli.py`** — Typer commands: `export`, `list-schemas`, `list-tables`. `export` writes `./DB_LAYOUT.md` in the current directory. No other files are written.
 
 ## DDL rendering details
 

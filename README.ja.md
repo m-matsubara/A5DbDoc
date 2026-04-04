@@ -30,6 +30,8 @@ pip install -e ".[oracle]"  # Oracle (cx_Oracle)
 a5dbdoc export <接続URL>
 ```
 
+`export` を実行すると、カレントディレクトリに `DB_LAYOUT.md` が生成されます。出力ファイルはこれだけです。
+
 ```bash
 # SQLite
 a5dbdoc export sqlite:///./myapp.db
@@ -43,28 +45,19 @@ a5dbdoc export mysql+pymysql://user:pass@localhost/mydb
 # SQL Server
 a5dbdoc export "mssql+pyodbc://user:pass@server/mydb?driver=ODBC+Driver+17+for+SQL+Server"
 
-# 出力先を指定
-a5dbdoc export sqlite:///./myapp.db --output ./llm-context/
-
 # スキーマを指定（PostgreSQL など）
 a5dbdoc export postgresql://user:pass@localhost/mydb --schema public
 
 # テーブル名で絞り込み（glob パターン）
 a5dbdoc export postgresql://user:pass@localhost/mydb --table "order*" --table "customer*"
-
-# テーブルごとに別ファイルに分割
-a5dbdoc export postgresql://user:pass@localhost/mydb --split
 ```
 
 **オプション一覧:**
 
-| オプション | 短縮 | デフォルト | 説明 |
-|-----------|------|-----------|------|
-| `--output` | `-o` | `./docs/schema` | 出力先ディレクトリ |
-| `--schema` | `-s` | (全スキーマ) | 対象スキーマ名。複数指定可 |
-| `--table` | `-t` | (全テーブル) | テーブル名の glob パターン。複数指定可 |
-| `--split` | | false | テーブルごとに別ファイルに出力 |
-| `--no-index` | | false | インデックスファイルを生成しない（`--split` 時のみ有効） |
+| オプション | 短縮 | 説明 |
+|-----------|------|------|
+| `--schema` | `-s` | 対象スキーマ名。複数指定可。省略時は全スキーマ。 |
+| `--table` | `-t` | テーブル名の glob パターン。複数指定可。省略時は全テーブル。 |
 
 ### スキーマ一覧を確認
 
@@ -80,42 +73,13 @@ a5dbdoc list-tables postgresql://user:pass@localhost/mydb --schema public
 
 ## 出力形式
 
-`export` を実行すると常に2種類のファイルが生成されます。
-
-1. **`./DB_LAYOUT.md`** — プロジェクトルートに置かれる全テーブルの DDL 概要
-2. **`./docs/schema/`** — スキーマ単位（または `--split` でテーブル単位）の詳細ファイル
-
-### スキーマ単位（デフォルト）
-
-スキーマ内のすべてのテーブルを1ファイルにまとめます。
-
-```
-docs/schema/
-└── public.md
-```
-
-### テーブル単位（`--split`）
-
-テーブルごとに個別ファイルとインデックスファイルを生成します。
-
-```
-docs/schema/
-├── public__index.md
-├── public__customers.md
-├── public__orders.md
-└── public__order_items.md
-```
-
-### 出力内容の例
+カレントディレクトリに `DB_LAYOUT.md` が生成されます。全テーブルの DDL が1つの SQL コードブロックにまとめられます。
 
 ````markdown
-# Schema: `public`
+# DB Layout
 
 - **Database:** PostgreSQL 15.3
-- **Tables:** 2
 - **Exported:** 2026-04-04
-
----
 
 ```sql
 CREATE TABLE public.customers (
@@ -143,25 +107,13 @@ CREATE INDEX ix_orders_customer_id ON public.orders (customer_id);
 
 ## Claude Code での使い方
 
-プロジェクトルートで `a5dbdoc export` を実行すると `DB_LAYOUT.md` が生成されます。`CLAUDE.md` に記載しておくと Claude Code が常に参照します。
-
-```bash
-# スキーマ情報を生成
-a5dbdoc export postgresql://user:pass@localhost/mydb \
-    --schema public \
-    --output ./docs/schema/
-
-# Claude Code で参照
-# @DB_LAYOUT.md  または  @docs/schema/public.md
-```
-
-プロジェクトの `CLAUDE.md` に以下を追記しておくと、Claude Code が常にスキーマを把握した状態になります。
+プロジェクトルートで `a5dbdoc export` を実行します。プロジェクトの `CLAUDE.md` に以下を追記しておくと、Claude Code が常にスキーマを把握した状態になります。
 
 ```markdown
 ## データベーススキーマ
 
-スキーマ定義は `DB_LAYOUT.md`（概要）と `docs/schema/`（詳細）に格納されています。
-SQL を書く際は必ずこれらのファイルを参照してください。
+`DB_LAYOUT.md` に全テーブルの DDL が記載されています。
+SQL を書く際は必ずこのファイルを参照してください。
 ```
 
 ## 開発・テスト

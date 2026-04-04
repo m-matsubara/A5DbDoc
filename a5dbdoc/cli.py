@@ -9,27 +9,25 @@ from rich.table import Table as RichTable
 
 from .inspector import SchemaInspector
 from .renderer import DDLRenderer
-from .writer import SchemaWriter
 
 app = typer.Typer(
     name="a5dbdoc",
-    help="Generate Markdown DDL documentation from any SQLAlchemy-supported database.",
+    help="Generate a DB_LAYOUT.md DDL file from any SQLAlchemy-supported database.",
     no_args_is_help=True,
 )
 console = Console()
+
+_DB_LAYOUT = Path("./DB_LAYOUT.md")
 
 
 @app.command()
 def export(
     url: Annotated[str, typer.Argument(help="SQLAlchemy connection URL (e.g. sqlite:///./app.db)")],
-    output: Annotated[Path, typer.Option("--output", "-o", help="Output directory")] = Path("./docs/schema"),
     schema: Annotated[list[str], typer.Option("--schema", "-s", help="Schema name(s) to include. Repeatable.")] = [],
     table: Annotated[list[str], typer.Option("--table", "-t", help="Table name glob pattern(s). Repeatable.")] = [],
-    split: Annotated[bool, typer.Option("--split", help="Write one file per table instead of one file per schema.")] = False,
-    no_index: Annotated[bool, typer.Option("--no-index", help="Skip writing the schema index file (only for --split).")] = False,
 ) -> None:
     """
-    Connect to the database at URL and write DDL schema docs to OUTPUT.
+    Connect to the database at URL and write DB_LAYOUT.md to the current directory.
 
     Connection URL examples:\n
       sqlite:///./myapp.db\n
@@ -43,16 +41,8 @@ def export(
         db_label = insp.get_db_label()
         console.print(f"[dim]Connected: {db_label}[/dim]")
 
-        if schema:
-            target_schemas = list(schema)
-        else:
-            target_schemas = insp.get_schema_names()
-            if len(target_schemas) > 1:
-                console.print(f"[dim]Found schemas: {', '.join(target_schemas)}[/dim]")
-
+        target_schemas = list(schema) if schema else insp.get_schema_names()
         table_patterns = list(table) if table else None
-        writer = SchemaWriter(output, renderer)
-        all_written: list[Path] = []
         processed_schemas = []
 
         for schema_name in target_schemas:
@@ -61,35 +51,18 @@ def export(
                 schema=schema_name if schema_name not in ("default", "main") else None,
                 table_patterns=table_patterns,
             )
-
             if not schema_info.tables:
                 console.print(f"  [yellow]No tables found in schema '{schema_name}'[/yellow]")
                 continue
-
             console.print(f"  Tables found: {len(schema_info.tables)}")
             processed_schemas.append(schema_info)
 
-            if split:
-                written = writer.write_per_table(schema_info, db_label, write_index=not no_index)
-            else:
-                written = [writer.write_per_schema(schema_info, db_label)]
+    if not processed_schemas:
+        console.print("[yellow]No tables found. DB_LAYOUT.md was not written.[/yellow]")
+        raise typer.Exit(1)
 
-            all_written.extend(written)
-
-        if processed_schemas:
-            db_layout_path = Path("./DB_LAYOUT.md")
-            db_layout_path.write_text(
-                renderer.render_db_layout(processed_schemas, db_label),
-                encoding="utf-8",
-            )
-            all_written.insert(0, db_layout_path)
-
-    if all_written:
-        console.print(f"\n[green]Wrote {len(all_written)} file(s) to[/green] [bold]{output}[/bold]")
-        for path in all_written:
-            console.print(f"  {path}")
-    else:
-        console.print("[yellow]No files written.[/yellow]")
+    _DB_LAYOUT.write_text(renderer.render_db_layout(processed_schemas, db_label), encoding="utf-8")
+    console.print(f"\n[green]Written:[/green] [bold]{_DB_LAYOUT}[/bold]")
 
 
 @app.command("list-schemas")

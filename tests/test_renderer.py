@@ -56,7 +56,6 @@ def test_ddl_table_comment():
 def test_ddl_column_not_null():
     r = DDLRenderer()
     ddl = r._render_table_ddl(make_table())
-    # id is NOT NULL
     assert "NOT NULL" in ddl
 
 def test_ddl_column_nullable_omits_not_null():
@@ -98,21 +97,16 @@ def test_ddl_index():
     assert "CREATE INDEX ix_orders_status ON public.orders (status);" in ddl
 
 def test_ddl_unique_index_not_duplicated():
-    """UNIQUE indexes that duplicate a UNIQUE constraint should not appear."""
-    from a5dbdoc.models import IndexInfo, UniqueConstraintInfo
     table = make_table()
     table.indexes.append(IndexInfo(name="ix_uq", columns=["reference_number"], unique=True))
     r = DDLRenderer()
     ddl = r._render_table_ddl(table)
-    # The unique index on reference_number should be skipped (already in UNIQUE constraint)
     assert "CREATE UNIQUE INDEX ix_uq" not in ddl
 
 def test_ddl_comma_before_inline_comment():
-    """Comma must appear before -- comment, not after."""
     r = DDLRenderer()
     ddl = r._render_table_ddl(make_table())
     for line in ddl.splitlines():
-        # No line should have a comma after a comment marker
         if "--" in line and "," in line:
             assert line.index(",") < line.index("--"), f"Comma after comment in: {line!r}"
 
@@ -121,47 +115,6 @@ def test_ddl_ends_with_semicolon():
     ddl = r._render_table_ddl(make_table())
     non_empty_lines = [l for l in ddl.splitlines() if l.strip()]
     assert non_empty_lines[-1].endswith(";")
-
-
-# --- render_table (full Markdown file) ---
-
-def test_render_table_header():
-    r = DDLRenderer()
-    md = r.render_table(make_table(), db_label="PostgreSQL 15.3")
-    assert "# Table: `public.orders`" in md
-    assert "**Database:** PostgreSQL 15.3" in md
-    assert "**Schema:** public" in md
-
-def test_render_table_sql_code_block():
-    r = DDLRenderer()
-    md = r.render_table(make_table())
-    assert "```sql" in md
-    assert "CREATE TABLE public.orders" in md
-
-
-# --- render_schema (combined file) ---
-
-def test_render_schema_header():
-    r = DDLRenderer()
-    schema = SchemaInfo(name="public", tables=[make_table()])
-    md = r.render_schema(schema, db_label="PostgreSQL 15.3")
-    assert "# Schema: `public`" in md
-    assert "**Database:** PostgreSQL 15.3" in md
-    assert "**Tables:** 1" in md
-
-def test_render_schema_toc():
-    r = DDLRenderer()
-    schema = SchemaInfo(name="public", tables=[make_table()])
-    md = r.render_schema(schema)
-    assert "## Tables" in md
-    assert "`orders`" in md
-
-def test_render_schema_sql_code_block():
-    r = DDLRenderer()
-    schema = SchemaInfo(name="public", tables=[make_table()])
-    md = r.render_schema(schema)
-    assert "```sql" in md
-    assert "CREATE TABLE public.orders" in md
 
 
 # --- render_db_layout ---
@@ -185,16 +138,4 @@ def test_render_db_layout_multiple_schemas():
     s1 = SchemaInfo(name="public", tables=[make_table()])
     s2 = SchemaInfo(name="audit", tables=[make_table()])
     md = r.render_db_layout([s1, s2], "")
-    # Both schemas' tables appear in the single code block
     assert md.count("CREATE TABLE public.orders") == 2
-
-
-# --- render_index ---
-
-def test_render_index_links():
-    r = DDLRenderer()
-    schema = SchemaInfo(name="public", tables=[make_table()])
-    md = r.render_index(schema, db_label="SQLite 3.42")
-    assert "# Schema: `public`" in md
-    assert "[orders](public__orders.md)" in md
-    assert "**Database:** SQLite 3.42" in md
