@@ -30,7 +30,6 @@ Thumbs.db
 .DS_Store
 
 # output file
-docs/schema/
 DB_LAYOUT.md
 
 # SQLite
