@@ -57,11 +57,28 @@ def export(
             console.print(f"  Tables found: {len(schema_info.tables)}")
             processed_schemas.append(schema_info)
 
+        # Resolve schema names to SA values (None = DB default)
+        sa_schemas = [
+            s if s not in ("default", "main") else None
+            for s in target_schemas
+        ]
+
+        migration_version: tuple[str, str] | None = None
+        try:
+            migration_version = insp.get_migration_version(sa_schemas)
+            if migration_version:
+                console.print(f"[dim]Migration: {migration_version[0]} ({migration_version[1]})[/dim]")
+        except Exception as e:
+            console.print(f"[yellow]Warning: Could not read migration version: {e}[/yellow]")
+
     if not processed_schemas:
         console.print("[yellow]No tables found. DB_LAYOUT.md was not written.[/yellow]")
         raise typer.Exit(1)
 
-    _DB_LAYOUT.write_text(renderer.render_db_layout(processed_schemas, db_label), encoding="utf-8")
+    _DB_LAYOUT.write_text(
+        renderer.render_db_layout(processed_schemas, db_label, migration_version),
+        encoding="utf-8",
+    )
     console.print(f"\n[green]Written:[/green] [bold]{_DB_LAYOUT}[/bold]")
 
 

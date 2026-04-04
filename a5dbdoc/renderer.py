@@ -15,11 +15,19 @@ def _comma_before_comment(item: str) -> str:
 
 
 class DDLRenderer:
-    def render_db_layout(self, schemas: list[SchemaInfo], db_label: str) -> str:
+    def render_db_layout(
+        self,
+        schemas: list[SchemaInfo],
+        db_label: str,
+        migration: tuple[str, str] | None = None,
+    ) -> str:
         """Generate DB_LAYOUT.md: database header + all DDL in one SQL code block."""
         parts: list[str] = []
         parts.append("# DB Layout\n")
         parts.append(f"- **Database:** {db_label}")
+        if migration:
+            version, tool = migration
+            parts.append(f"- **Migration:** {version} ({tool})")
         parts.append(f"- **Exported:** {date.today()}")
         parts.append("")
 

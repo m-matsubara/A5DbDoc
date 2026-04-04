@@ -246,6 +246,47 @@ class SchemaInspector:
             )
         return None, None
 
+    # (tool_name, table_name, query_template)
+    # {table} is replaced with the schema-qualified table name at runtime.
+    # fetchone() is used so ORDER BY without LIMIT is fine for small tables.
+    _MIGRATION_DETECTORS: list[tuple[str, str, str]] = [
+        ("Alembic",   "alembic_version",       "SELECT version_num FROM {table}"),
+        ("Flyway",    "flyway_schema_history",  "SELECT version FROM {table} WHERE success != 0 ORDER BY installed_rank DESC"),
+        ("Liquibase", "databasechangelog",      "SELECT id FROM {table} ORDER BY orderexecuted DESC"),
+        ("Django",    "django_migrations",      "SELECT name FROM {table} ORDER BY id DESC"),
+        ("dbmate",    "schema_migrations",      "SELECT version FROM {table} ORDER BY version DESC"),
+        ("Atlas",     "atlas_schema_revisions", "SELECT version FROM {table} ORDER BY id DESC"),
+    ]
+
+    def get_migration_version(
+        self, schemas: list[str | None] | None = None
+    ) -> tuple[str, str] | None:
+        """
+        Detect the current migration version from known tool tables.
+
+        Args:
+            schemas: SA schema names to search (None = DB default schema).
+                     Tries each schema in order; returns the first match.
+                     If omitted, searches the default schema only.
+
+        Returns (version, tool_name) or None if no migration table is found.
+        Each failed query is silently ignored (table absent = tool not in use).
+        """
+        candidates: list[str | None] = schemas if schemas is not None else [None]
+
+        for schema in candidates:
+            prefix = f"{schema}." if schema else ""
+            for tool_name, table_name, query_tpl in self._MIGRATION_DETECTORS:
+                try:
+                    query = query_tpl.format(table=f"{prefix}{table_name}")
+                    with self.engine.connect() as conn:
+                        row = conn.execute(text(query)).fetchone()
+                    if row and row[0] is not None:
+                        return str(row[0]), tool_name
+                except Exception:
+                    continue
+        return None
+
     _DIALECT_DISPLAY_NAMES = {
         "postgresql": "PostgreSQL",
         "mysql": "MySQL",
