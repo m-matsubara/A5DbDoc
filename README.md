@@ -87,22 +87,22 @@ a5dbdoc list-tables postgresql://user:pass@localhost/mydb --schema public
 
 ```sql
 CREATE TABLE public.customers (
-    id     INTEGER       NOT NULL,
-    name   VARCHAR(120)  NOT NULL,
-    email  VARCHAR(255)  NOT NULL,
-    CONSTRAINT pk_customers PRIMARY KEY (id),
-    CONSTRAINT uq_customers_email UNIQUE (email)
+  id INTEGER NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  CONSTRAINT pk_customers PRIMARY KEY (id),
+  CONSTRAINT uq_customers_email UNIQUE (email)
 );
 
 CREATE TABLE public.orders (
-    id            INTEGER         NOT NULL,
-    customer_id   INTEGER         NOT NULL,
-    status        VARCHAR(32)     NOT NULL  DEFAULT 'pending',
-    total_amount  NUMERIC(12, 2)  NOT NULL,
-    notes         TEXT,  -- free text
-    CONSTRAINT pk_orders PRIMARY KEY (id),
-    CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id)
-        REFERENCES public.customers (id)
+  id INTEGER NOT NULL,
+  customer_id INTEGER NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'pending',
+  total_amount NUMERIC(12, 2) NOT NULL,
+  notes TEXT, -- free text
+  CONSTRAINT pk_orders PRIMARY KEY (id),
+  CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id)
+    REFERENCES public.customers (id)
 );
 
 CREATE INDEX ix_orders_customer_id ON public.orders (customer_id);

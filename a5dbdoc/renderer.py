@@ -7,7 +7,7 @@ from .models import SchemaInfo, TableInfo
 
 def _comma_before_comment(item: str) -> str:
     """Append comma to item, inserting it before any inline -- comment."""
-    marker = "  --"
+    marker = " --"
     idx = item.find(marker)
     if idx != -1:
         return item[:idx] + "," + item[idx:]
@@ -43,34 +43,30 @@ class DDLRenderer:
 
         lines.append(f"CREATE TABLE {table.qualified_name} (")
 
-        # Column widths for alignment
-        name_w = max((len(c.name) for c in table.columns), default=0)
-        type_w = max((len(c.type) for c in table.columns), default=0)
-
         # Build body items (columns + constraints), joined with commas
         items: list[str] = []
 
         for col in table.columns:
-            parts = [f"    {col.name:<{name_w}}  {col.type:<{type_w}}"]
+            parts = [f"  {col.name} {col.type}"]
             if not col.nullable:
                 parts.append("NOT NULL")
             if col.default is not None:
                 parts.append(f"DEFAULT {col.default}")
-            line = "  ".join(parts)
+            line = " ".join(parts)
             if col.comment:
-                line += f"  -- {col.comment}"
+                line += f" -- {col.comment}"
             items.append(line)
 
         # PRIMARY KEY constraint
         if table.primary_keys:
             pk_cols = ", ".join(table.primary_keys)
-            items.append(f"    CONSTRAINT pk_{table.name} PRIMARY KEY ({pk_cols})")
+            items.append(f"  CONSTRAINT pk_{table.name} PRIMARY KEY ({pk_cols})")
 
         # UNIQUE constraints
         for uc in table.unique_constraints:
             uc_cols = ", ".join(uc.columns)
             name = uc.name or f"uq_{table.name}"
-            items.append(f"    CONSTRAINT {name} UNIQUE ({uc_cols})")
+            items.append(f"  CONSTRAINT {name} UNIQUE ({uc_cols})")
 
         # FOREIGN KEY constraints
         for fk in table.foreign_keys:
@@ -79,8 +75,8 @@ class DDLRenderer:
             ref_cols = ", ".join(fk.referred_columns)
             name = fk.name or f"fk_{table.name}"
             items.append(
-                f"    CONSTRAINT {name} FOREIGN KEY ({fk_cols})\n"
-                f"        REFERENCES {ref_schema}{fk.referred_table} ({ref_cols})"
+                f"  CONSTRAINT {name} FOREIGN KEY ({fk_cols})\n"
+                f"    REFERENCES {ref_schema}{fk.referred_table} ({ref_cols})"
             )
 
         lines.append("\n".join(
