@@ -7,6 +7,7 @@ from a5dbdoc.models import (
     SchemaInfo,
     TableInfo,
     UniqueConstraintInfo,
+    ViewInfo,
 )
 from a5dbdoc.renderer import DDLRenderer
 
@@ -171,3 +172,65 @@ def test_render_db_layout_multiple_schemas():
     s2 = SchemaInfo(name="audit", tables=[make_table()])
     md = r.render_db_layout([s1, s2], "")
     assert md.count("CREATE TABLE public.orders") == 2
+
+
+# --- _render_view_ddl ---
+
+def make_view_select_body() -> ViewInfo:
+    return ViewInfo(
+        schema="public",
+        name="active_orders",
+        definition="SELECT id, customer_id FROM orders WHERE status = 'active'",
+        comment="アクティブ注文ビュー",
+    )
+
+
+def make_view_full_create() -> ViewInfo:
+    return ViewInfo(
+        schema=None,
+        name="summary",
+        definition="CREATE VIEW summary AS SELECT count(*) FROM orders",
+        comment=None,
+    )
+
+
+def test_render_view_select_body():
+    r = DDLRenderer()
+    ddl = r._render_view_ddl(make_view_select_body())
+    assert "CREATE VIEW public.active_orders AS" in ddl
+    assert "SELECT id, customer_id FROM orders" in ddl
+    assert ddl.strip().endswith(";")
+
+
+def test_render_view_comment():
+    r = DDLRenderer()
+    ddl = r._render_view_ddl(make_view_select_body())
+    assert "-- アクティブ注文ビュー" in ddl
+
+
+def test_render_view_full_create_passthrough():
+    r = DDLRenderer()
+    ddl = r._render_view_ddl(make_view_full_create())
+    assert "CREATE VIEW summary" in ddl
+    assert ddl.strip().endswith(";")
+
+
+def test_render_view_no_duplicate_create():
+    """Full CREATE body must not get wrapped in another CREATE OR REPLACE."""
+    r = DDLRenderer()
+    ddl = r._render_view_ddl(make_view_full_create())
+    assert ddl.count("CREATE") == 1
+
+
+def test_render_db_layout_includes_view():
+    r = DDLRenderer()
+    schema = SchemaInfo(name="public", tables=[make_table()], views=[make_view_select_body()])
+    md = r.render_db_layout([schema], "PostgreSQL 15")
+    assert "CREATE VIEW public.active_orders" in md
+
+
+def test_render_db_layout_no_views():
+    r = DDLRenderer()
+    schema = SchemaInfo(name="public", tables=[make_table()])
+    md = r.render_db_layout([schema], "PostgreSQL 15")
+    assert "CREATE VIEW" not in md

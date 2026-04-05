@@ -1,7 +1,7 @@
 """Tests for SchemaInspector."""
 
 import pytest
-from sqlalchemy import Column, ForeignKey, Index, Integer, String, UniqueConstraint, create_engine, inspect, MetaData, Table
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, UniqueConstraint, create_engine, inspect, MetaData, Table, text
 
 from a5dbdoc.inspector import SchemaInspector
 from a5dbdoc.models import SchemaInfo, TableInfo
@@ -318,3 +318,57 @@ def test_via_url():
 
     schema_info = insp.inspect_schema()
     assert any(t.name == "items" for t in schema_info.tables)
+
+
+# --- Views ---
+
+def _engine_with_view():
+    engine = create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL)"))
+        conn.execute(text("CREATE VIEW cheap_products AS SELECT id, name FROM products WHERE price < 10"))
+    return engine
+
+
+def test_inspect_schema_includes_views():
+    engine = _engine_with_view()
+    insp = _make_insp(engine)
+    schema_info = insp.inspect_schema()
+    view_names = [v.name for v in schema_info.views]
+    assert "cheap_products" in view_names
+
+
+def test_inspect_view_definition():
+    engine = _engine_with_view()
+    insp = _make_insp(engine)
+    schema_info = insp.inspect_schema()
+    v = next(v for v in schema_info.views if v.name == "cheap_products")
+    assert v.definition is not None
+    assert "products" in v.definition.lower()
+
+
+def test_inspect_view_schema_attribute():
+    engine = _engine_with_view()
+    insp = _make_insp(engine)
+    schema_info = insp.inspect_schema()
+    v = next(v for v in schema_info.views if v.name == "cheap_products")
+    # SQLite default schema is None after normalization
+    assert v.schema is None
+
+
+def test_view_filter_pattern():
+    engine = _engine_with_view()
+    insp = _make_insp(engine)
+    schema_info = insp.inspect_schema(table_patterns=["cheap*"])
+    # tables filtered out (no table matches "cheap*"), view matches
+    assert len(schema_info.tables) == 0
+    assert any(v.name == "cheap_products" for v in schema_info.views)
+
+
+def test_no_views_when_none_exist():
+    engine = create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE t (id INTEGER PRIMARY KEY)"))
+    insp = _make_insp(engine)
+    schema_info = insp.inspect_schema()
+    assert schema_info.views == []

@@ -54,6 +54,21 @@ class TableInfo:
 
 
 @dataclass
+class ViewInfo:
+    schema: str | None
+    name: str
+    definition: str | None
+    comment: str | None = None
+
+    @property
+    def qualified_name(self) -> str:
+        if self.schema:
+            return f"{self.schema}.{self.name}"
+        return self.name
+
+
+@dataclass
 class SchemaInfo:
     name: str
     tables: list[TableInfo] = field(default_factory=list)
+    views: list[ViewInfo] = field(default_factory=list)

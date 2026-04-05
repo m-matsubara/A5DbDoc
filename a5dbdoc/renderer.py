@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from .models import SchemaInfo, TableInfo
+from .models import SchemaInfo, TableInfo, ViewInfo
 
 
 def _comma_before_comment(item: str) -> str:
@@ -44,7 +44,13 @@ class DDLRenderer:
             for schema in schemas
             for table in schema.tables
         ]
-        parts.append("\n\n".join(ddl_blocks))
+        view_blocks = [
+            self._render_view_ddl(view)
+            for schema in schemas
+            for view in schema.views
+        ]
+        all_blocks = ddl_blocks + view_blocks
+        parts.append("\n\n".join(all_blocks))
         parts.append("```\n")
 
         return "\n".join(parts)
@@ -109,5 +115,25 @@ class DDLRenderer:
             cols = ", ".join(idx.columns)
             name = idx.name or f"ix_{table.name}"
             lines.append(f"\nCREATE {unique_kw}INDEX {name} ON {table.qualified_name} ({cols});")
+
+        return "\n".join(lines)
+
+    def _render_view_ddl(self, view: ViewInfo) -> str:
+        """Generate CREATE OR REPLACE VIEW SQL for one view."""
+        lines: list[str] = []
+
+        if view.comment:
+            lines.append(f"-- {view.comment}")
+
+        definition = (view.definition or "").strip()
+
+        # Some dialects return the full CREATE VIEW statement; others return only the SELECT body.
+        if definition.upper().startswith("CREATE"):
+            # Normalise: ensure it ends with a semicolon
+            stmt = definition if definition.endswith(";") else definition + ";"
+            lines.append(stmt)
+        else:
+            lines.append(f"CREATE VIEW {view.qualified_name} AS")
+            lines.append(f"{definition};")
 
         return "\n".join(lines)

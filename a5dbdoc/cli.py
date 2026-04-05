@@ -56,6 +56,8 @@ def export(
                 console.print(f"  [yellow]No tables found in schema '{schema_name}'[/yellow]")
                 continue
             console.print(f"  Tables found: {len(schema_info.tables)}")
+            if schema_info.views:
+                console.print(f"  Views found: {len(schema_info.views)}")
             processed_schemas.append(schema_info)
 
         # Resolve schema names to SA values (None = DB default)

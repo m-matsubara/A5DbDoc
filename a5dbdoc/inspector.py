@@ -14,6 +14,7 @@ from .models import (
     SchemaInfo,
     TableInfo,
     UniqueConstraintInfo,
+    ViewInfo,
 )
 
 # Dialects that use database-as-schema (schema names = database names)
@@ -79,7 +80,51 @@ class SchemaInspector:
             table_info = self._inspect_table(insp, table_name, sa_schema)
             tables.append(table_info)
 
-        return SchemaInfo(name=schema_label, tables=tables)
+        views = self._inspect_views(insp, sa_schema, table_patterns)
+
+        return SchemaInfo(name=schema_label, tables=tables, views=views)
+
+    def _inspect_views(
+        self,
+        insp,
+        schema: str | None,
+        table_patterns: list[str] | None,
+    ) -> list[ViewInfo]:
+        """Reflect all views in the given schema."""
+        try:
+            view_names = insp.get_view_names(schema=schema)
+        except Exception:
+            return []
+
+        if table_patterns:
+            view_names = [
+                v for v in view_names
+                if any(fnmatch.fnmatch(v, pat) for pat in table_patterns)
+            ]
+
+        views: list[ViewInfo] = []
+        for view_name in sorted(view_names):
+            definition: str | None = None
+            try:
+                definition = insp.get_view_definition(view_name, schema=schema)
+            except Exception:
+                pass
+
+            comment: str | None = None
+            try:
+                result = insp.get_table_comment(view_name, schema=schema)
+                comment = result.get("text") or None
+            except Exception:
+                pass
+
+            views.append(ViewInfo(
+                schema=schema,
+                name=view_name,
+                definition=definition,
+                comment=comment,
+            ))
+
+        return views
 
     def _inspect_table(self, insp, table_name: str, schema: str | None) -> TableInfo:
         # --- comment ---
