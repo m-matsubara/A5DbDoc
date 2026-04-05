@@ -133,6 +133,18 @@ def test_render_db_layout_sql_code_block():
     assert "```sql" in md
     assert "CREATE TABLE public.orders" in md
 
+def test_render_db_layout_migration_version():
+    r = DDLRenderer()
+    schema = SchemaInfo(name="public", tables=[make_table()])
+    md = r.render_db_layout([schema], "PostgreSQL 12.5", migration=("2.22.0", "Flyway"))
+    assert "**Migration:** 2.22.0 (Flyway)" in md
+
+def test_render_db_layout_no_migration_version():
+    r = DDLRenderer()
+    schema = SchemaInfo(name="public", tables=[make_table()])
+    md = r.render_db_layout([schema], "PostgreSQL 12.5", migration=None)
+    assert "Migration" not in md
+
 def test_render_db_layout_multiple_schemas():
     r = DDLRenderer()
     s1 = SchemaInfo(name="public", tables=[make_table()])

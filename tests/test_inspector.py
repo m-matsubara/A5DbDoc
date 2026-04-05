@@ -237,6 +237,72 @@ def test_raw_type_query_sqlite_skipped():
     assert result == {}
 
 
+def _make_insp(engine):
+    insp = SchemaInspector.__new__(SchemaInspector)
+    insp.engine = engine
+    insp._dialect = "sqlite"
+    return insp
+
+
+def test_get_migration_version_alembic():
+    engine = create_engine("sqlite:///:memory:")
+    meta = MetaData()
+    Table("alembic_version", meta, Column("version_num", String(32), primary_key=True))
+    meta.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(meta.tables["alembic_version"].insert().values(version_num="abc123def456"))
+
+    result = _make_insp(engine).get_migration_version([None])
+    assert result == ("abc123def456", "Alembic")
+
+
+def test_get_migration_version_dbmate():
+    engine = create_engine("sqlite:///:memory:")
+    meta = MetaData()
+    Table("schema_migrations", meta, Column("version", String(32), primary_key=True))
+    meta.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(meta.tables["schema_migrations"].insert().values(version="20240101120000"))
+
+    result = _make_insp(engine).get_migration_version([None])
+    assert result == ("20240101120000", "dbmate")
+
+
+def test_get_migration_version_none_when_no_table():
+    engine = create_engine("sqlite:///:memory:")
+    result = _make_insp(engine).get_migration_version([None])
+    assert result is None
+
+
+def test_get_migration_version_prefers_alembic_over_dbmate():
+    """When multiple migration tables exist, Alembic is detected first."""
+    engine = create_engine("sqlite:///:memory:")
+    meta = MetaData()
+    Table("alembic_version", meta, Column("version_num", String(32), primary_key=True))
+    Table("schema_migrations", meta, Column("version", String(32), primary_key=True))
+    meta.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(meta.tables["alembic_version"].insert().values(version_num="alembic_ver"))
+        conn.execute(meta.tables["schema_migrations"].insert().values(version="dbmate_ver"))
+
+    version, tool = _make_insp(engine).get_migration_version([None])
+    assert tool == "Alembic"
+
+
+def test_get_migration_version_default_schemas_arg():
+    """schemas=None falls back to [None] (DB default schema)."""
+    engine = create_engine("sqlite:///:memory:")
+    meta = MetaData()
+    Table("alembic_version", meta, Column("version_num", String(32), primary_key=True))
+    meta.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(meta.tables["alembic_version"].insert().values(version_num="ver1"))
+
+    # Called without arguments — should still work
+    result = _make_insp(engine).get_migration_version()
+    assert result == ("ver1", "Alembic")
+
+
 def test_via_url():
     """Test using the public constructor (full integration)."""
     engine = create_engine("sqlite:///:memory:")

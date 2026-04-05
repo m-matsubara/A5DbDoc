@@ -63,6 +63,20 @@ a5dbdoc export postgresql://user:pass@localhost/mydb --table "order*" --table "c
 | `--schema` | `-s` | Schema name(s) to include. Repeatable. Default: all schemas. |
 | `--table` | `-t` | Table name glob pattern(s). Repeatable. Default: all tables. |
 
+### Update agent config files
+
+Add a `DB_LAYOUT.md` reference to `CLAUDE.md` or `AGENTS.md` (creates the file if it doesn't exist):
+
+```bash
+a5dbdoc update-claude-md          # → ./CLAUDE.md
+a5dbdoc update-agents-md          # → ./AGENTS.md
+
+# Custom path
+a5dbdoc update-claude-md --path ./docs/CLAUDE.md
+```
+
+Running either command is idempotent — if the file already references `DB_LAYOUT.md`, nothing is changed.
+
 ### List available schemas
 
 ```bash
@@ -109,15 +123,23 @@ CREATE INDEX ix_orders_customer_id ON public.orders (customer_id);
 ```
 ````
 
-## Using with Claude Code
+## Using with AI agents
 
-Run `a5dbdoc export` in your project root. Add the following to your project's `CLAUDE.md` so Claude Code always has schema context:
+Run these two commands in your project root:
+
+```bash
+a5dbdoc export <connection-url>   # generates DB_LAYOUT.md
+a5dbdoc update-claude-md          # adds DB_LAYOUT.md reference to CLAUDE.md
+# or
+a5dbdoc update-agents-md          # for OpenAI Codex / other agents using AGENTS.md
+```
+
+`update-claude-md` appends the following section to `CLAUDE.md` if not already present:
 
 ```markdown
-## Database schema
-
-`DB_LAYOUT.md` contains the full DDL for all tables.
-Always read this file before writing SQL.
+## Database
+Database schema is documented in DB_LAYOUT.md.
+Read it when working on SQL, migrations, or ORM models.
 ```
 
 ## Development

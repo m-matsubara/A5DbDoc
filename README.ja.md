@@ -63,6 +63,20 @@ a5dbdoc export postgresql://user:pass@localhost/mydb --table "order*" --table "c
 | `--schema` | `-s` | 対象スキーマ名。複数指定可。省略時は全スキーマ。 |
 | `--table` | `-t` | テーブル名の glob パターン。複数指定可。省略時は全テーブル。 |
 
+### エージェント設定ファイルの更新
+
+`CLAUDE.md` または `AGENTS.md` に `DB_LAYOUT.md` への参照を追加します（ファイルがない場合は作成）。
+
+```bash
+a5dbdoc update-claude-md          # → ./CLAUDE.md
+a5dbdoc update-agents-md          # → ./AGENTS.md
+
+# パスを指定する場合
+a5dbdoc update-claude-md --path ./docs/CLAUDE.md
+```
+
+どちらのコマンドも冪等です。すでに `DB_LAYOUT.md` への言及がある場合は何も変更しません。
+
 ### スキーマ一覧を確認
 
 ```bash
@@ -109,15 +123,23 @@ CREATE INDEX ix_orders_customer_id ON public.orders (customer_id);
 ```
 ````
 
-## Claude Code での使い方
+## AI エージェントとの連携
 
-プロジェクトルートで `a5dbdoc export` を実行します。プロジェクトの `CLAUDE.md` に以下を追記しておくと、Claude Code が常にスキーマを把握した状態になります。
+プロジェクトルートで以下の2コマンドを実行します。
+
+```bash
+a5dbdoc export <接続URL>          # DB_LAYOUT.md を生成
+a5dbdoc update-claude-md          # CLAUDE.md に DB_LAYOUT.md への参照を追加
+# または
+a5dbdoc update-agents-md          # OpenAI Codex など AGENTS.md を使うエージェント向け
+```
+
+`update-claude-md` は `CLAUDE.md` に以下のセクションを追加します（既にある場合は変更なし）。
 
 ```markdown
-## データベーススキーマ
-
-`DB_LAYOUT.md` に全テーブルの DDL が記載されています。
-SQL を書く際は必ずこのファイルを参照してください。
+## Database
+Database schema is documented in DB_LAYOUT.md.
+Read it when working on SQL, migrations, or ORM models.
 ```
 
 ## 開発・テスト

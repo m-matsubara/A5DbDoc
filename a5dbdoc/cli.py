@@ -9,6 +9,7 @@ from rich.table import Table as RichTable
 
 from .inspector import SchemaInspector
 from .renderer import DDLRenderer
+from .updater import update_agent_config
 
 app = typer.Typer(
     name="a5dbdoc",
@@ -80,6 +81,30 @@ def export(
         encoding="utf-8",
     )
     console.print(f"\n[green]Written:[/green] [bold]{_DB_LAYOUT}[/bold]")
+
+
+@app.command("update-claude-md")
+def update_claude_md(
+    path: Annotated[Path, typer.Option("--path", "-p", help="Target file path")] = Path("./CLAUDE.md"),
+) -> None:
+    """Add DB_LAYOUT.md reference to CLAUDE.md (creates the file if it doesn't exist)."""
+    modified = update_agent_config(path)
+    if modified:
+        console.print(f"[green]Updated:[/green] [bold]{path}[/bold]")
+    else:
+        console.print(f"[dim]{path} already references DB_LAYOUT.md, no changes made.[/dim]")
+
+
+@app.command("update-agents-md")
+def update_agents_md(
+    path: Annotated[Path, typer.Option("--path", "-p", help="Target file path")] = Path("./AGENTS.md"),
+) -> None:
+    """Add DB_LAYOUT.md reference to AGENTS.md (creates the file if it doesn't exist)."""
+    modified = update_agent_config(path)
+    if modified:
+        console.print(f"[green]Updated:[/green] [bold]{path}[/bold]")
+    else:
+        console.print(f"[dim]{path} already references DB_LAYOUT.md, no changes made.[/dim]")
 
 
 @app.command("list-schemas")
