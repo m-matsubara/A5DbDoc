@@ -81,7 +81,7 @@ class DDLRenderer:
         # PRIMARY KEY constraint
         if table.primary_keys:
             pk_cols = ", ".join(table.primary_keys)
-            items.append(f"  CONSTRAINT pk_{table.name} PRIMARY KEY ({pk_cols})")
+            items.append(f"  PRIMARY KEY ({pk_cols})")
 
         # UNIQUE constraints
         for uc in table.unique_constraints:
