@@ -253,7 +253,7 @@ def test_get_migration_version_alembic():
         conn.execute(meta.tables["alembic_version"].insert().values(version_num="abc123def456"))
 
     result = _make_insp(engine).get_migration_version([None])
-    assert result == ("abc123def456", "Alembic")
+    assert result == {None: ("abc123def456", "Alembic")}
 
 
 def test_get_migration_version_dbmate():
@@ -265,13 +265,13 @@ def test_get_migration_version_dbmate():
         conn.execute(meta.tables["schema_migrations"].insert().values(version="20240101120000"))
 
     result = _make_insp(engine).get_migration_version([None])
-    assert result == ("20240101120000", "dbmate")
+    assert result == {None: ("20240101120000", "dbmate")}
 
 
-def test_get_migration_version_none_when_no_table():
+def test_get_migration_version_empty_when_no_table():
     engine = create_engine("sqlite:///:memory:")
     result = _make_insp(engine).get_migration_version([None])
-    assert result is None
+    assert result == {}
 
 
 def test_get_migration_version_prefers_alembic_over_dbmate():
@@ -285,8 +285,8 @@ def test_get_migration_version_prefers_alembic_over_dbmate():
         conn.execute(meta.tables["alembic_version"].insert().values(version_num="alembic_ver"))
         conn.execute(meta.tables["schema_migrations"].insert().values(version="dbmate_ver"))
 
-    version, tool = _make_insp(engine).get_migration_version([None])
-    assert tool == "Alembic"
+    result = _make_insp(engine).get_migration_version([None])
+    assert result == {None: ("alembic_ver", "Alembic")}
 
 
 def test_get_migration_version_default_schemas_arg():
@@ -300,7 +300,7 @@ def test_get_migration_version_default_schemas_arg():
 
     # Called without arguments — should still work
     result = _make_insp(engine).get_migration_version()
-    assert result == ("ver1", "Alembic")
+    assert result == {None: ("ver1", "Alembic")}
 
 
 def test_via_url():

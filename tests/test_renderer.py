@@ -133,16 +133,36 @@ def test_render_db_layout_sql_code_block():
     assert "```sql" in md
     assert "CREATE TABLE public.orders" in md
 
-def test_render_db_layout_migration_version():
+def test_render_db_layout_migration_no_schema():
+    """SQLite-style: None key → single line."""
     r = DDLRenderer()
-    schema = SchemaInfo(name="public", tables=[make_table()])
-    md = r.render_db_layout([schema], "PostgreSQL 12.5", migration=("2.22.0", "Flyway"))
-    assert "**Migration:** 2.22.0 (Flyway)" in md
+    schema = SchemaInfo(name="default", tables=[make_table()])
+    md = r.render_db_layout([schema], "SQLite 3.49", migration={None: ("abc123", "Alembic")})
+    assert "- **Migration:** abc123 (Alembic)" in md
+
+def test_render_db_layout_migration_per_schema():
+    """PostgreSQL-style: schema keys → one line per schema."""
+    r = DDLRenderer()
+    s1 = SchemaInfo(name="public", tables=[make_table()])
+    s2 = SchemaInfo(name="audit", tables=[make_table()])
+    md = r.render_db_layout([s1, s2], "PostgreSQL 15.3", migration={
+        "public": ("2.22.0", "Flyway"),
+        "audit":  ("2.22.0", "Flyway"),
+    })
+    assert "- **Migration:**" in md
+    assert "  - **public:** 2.22.0 (Flyway)" in md
+    assert "  - **audit:** 2.22.0 (Flyway)" in md
 
 def test_render_db_layout_no_migration_version():
     r = DDLRenderer()
     schema = SchemaInfo(name="public", tables=[make_table()])
     md = r.render_db_layout([schema], "PostgreSQL 12.5", migration=None)
+    assert "Migration" not in md
+
+def test_render_db_layout_empty_migration_dict():
+    r = DDLRenderer()
+    schema = SchemaInfo(name="public", tables=[make_table()])
+    md = r.render_db_layout([schema], "PostgreSQL 12.5", migration={})
     assert "Migration" not in md
 
 def test_render_db_layout_multiple_schemas():

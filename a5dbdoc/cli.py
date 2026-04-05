@@ -64,11 +64,12 @@ def export(
             for s in target_schemas
         ]
 
-        migration_version: tuple[str, str] | None = None
+        migration_version: dict[str | None, tuple[str, str]] = {}
         try:
             migration_version = insp.get_migration_version(sa_schemas)
-            if migration_version:
-                console.print(f"[dim]Migration: {migration_version[0]} ({migration_version[1]})[/dim]")
+            for schema, (version, tool) in migration_version.items():
+                label = schema or "default"
+                console.print(f"[dim]Migration ({label}): {version} ({tool})[/dim]")
         except Exception as e:
             console.print(f"[yellow]Warning: Could not read migration version: {e}[/yellow]")
 

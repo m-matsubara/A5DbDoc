@@ -19,15 +19,22 @@ class DDLRenderer:
         self,
         schemas: list[SchemaInfo],
         db_label: str,
-        migration: tuple[str, str] | None = None,
+        migration: dict[str | None, tuple[str, str]] | None = None,
     ) -> str:
         """Generate DB_LAYOUT.md: database header + all DDL in one SQL code block."""
         parts: list[str] = []
         parts.append("# DB Layout\n")
         parts.append(f"- **Database:** {db_label}")
         if migration:
-            version, tool = migration
-            parts.append(f"- **Migration:** {version} ({tool})")
+            if None in migration:
+                # No-schema DB (e.g. SQLite): single line
+                version, tool = migration[None]
+                parts.append(f"- **Migration:** {version} ({tool})")
+            else:
+                # Schema-aware DB: one line per schema
+                parts.append("- **Migration:**")
+                for schema, (version, tool) in migration.items():
+                    parts.append(f"  - **{schema}:** {version} ({tool})")
         parts.append(f"- **Exported:** {date.today()}")
         parts.append("")
 

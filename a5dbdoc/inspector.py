@@ -260,19 +260,20 @@ class SchemaInspector:
 
     def get_migration_version(
         self, schemas: list[str | None] | None = None
-    ) -> tuple[str, str] | None:
+    ) -> dict[str | None, tuple[str, str]]:
         """
-        Detect the current migration version from known tool tables.
+        Detect migration versions from known tool tables, per schema.
 
         Args:
             schemas: SA schema names to search (None = DB default schema).
-                     Tries each schema in order; returns the first match.
                      If omitted, searches the default schema only.
 
-        Returns (version, tool_name) or None if no migration table is found.
+        Returns {schema: (version, tool_name)} for each schema that has a migration table.
+        The key is None for databases without a schema concept (e.g. SQLite).
         Each failed query is silently ignored (table absent = tool not in use).
         """
         candidates: list[str | None] = schemas if schemas is not None else [None]
+        result: dict[str | None, tuple[str, str]] = {}
 
         for schema in candidates:
             prefix = f"{schema}." if schema else ""
@@ -282,10 +283,12 @@ class SchemaInspector:
                     with self.engine.connect() as conn:
                         row = conn.execute(text(query)).fetchone()
                     if row and row[0] is not None:
-                        return str(row[0]), tool_name
+                        result[schema] = (str(row[0]), tool_name)
+                        break  # found for this schema, move to next
                 except Exception:
                     continue
-        return None
+
+        return result
 
     _DIALECT_DISPLAY_NAMES = {
         "postgresql": "PostgreSQL",
